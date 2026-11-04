@@ -90,6 +90,62 @@ That's it — no config files, no installers, no external libraries.
 
 ---
 
+## Updating to the latest version
+
+AMTOOL is updated in the repo whenever the current Adopt Me! event changes or a bug is fixed. You don't have to redownload anything — just pull the latest source and recompile.
+
+### If you installed with `git clone`
+
+From inside the `amtool` folder:
+
+```bash
+git pull
+g++ -std=c++17 -O2 amtool.cpp -o amtool        # Linux / macOS
+g++ -std=c++17 -O2 amtool.cpp -o amtool.exe    # Windows (MSYS2 / MinGW)
+```
+
+Then run `./amtool` (or `amtool.exe` on Windows). Your old binary is overwritten with the new one — no config files to migrate, no state to preserve.
+
+### If you downloaded a release binary
+
+Go to the [Releases page](https://github.com/wtvsad/amtool/releases), download the latest binary for your OS from the newest release, and replace the one you have. `chmod +x` it on Linux/macOS:
+
+```bash
+chmod +x amtool
+./amtool
+```
+
+Check which version you're running by opening the app and pressing `i` (About dev) — the header shows `wtvsad@amtool · vX.YZ`.
+
+### If you have local changes you want to keep
+
+`git pull` will refuse if you edited `amtool.cpp` yourself. Either commit your changes first, or stash them temporarily:
+
+```bash
+git stash          # save your edits
+git pull           # get the update
+git stash pop      # reapply your edits on top
+```
+
+### How often does it update?
+
+- **Every Adopt Me! event** — the quick time calculator's `PRESET_RATE` gets a new event name, date, and rate. Pull when a new event starts.
+- **Whenever a bug is fixed** — pull if you hit an issue and see a newer release on GitHub.
+- **Silent stretches** — if nothing has changed, no need to do anything. The current binary keeps working.
+
+### Am I on the latest version?
+
+```bash
+cd amtool
+git fetch
+git status
+```
+
+- `Your branch is up to date with 'origin/main'.` → you're current.
+- `Your branch is behind 'origin/main' by N commits.` → run `git pull` then recompile.
+
+---
+
 ## Usage
 
 The app is fully **arrow-key driven**. You never need to type a menu letter unless you want to (single-letter shortcuts work too).
@@ -323,6 +379,18 @@ chmod +x amtool
 ### Windows: `'amtool' is not recognized as an internal or external command`
 
 Use `amtool.exe`, or run with the full path, or add the folder to `PATH`.
+
+### `git pull` says "Your local changes would be overwritten"
+
+You edited `amtool.cpp` (or another tracked file). Stash first:
+
+```bash
+git stash
+git pull
+git stash pop
+```
+
+If you meant to throw your edits away: `git checkout -- amtool.cpp` then `git pull`.
 
 ---
 
