@@ -20,8 +20,7 @@
 - **Cost calculator** — add up prices of any number of pets, with NEON (×4) and MEGA (×16) bundle math, plus custom normal / NEON / MEGA counts.
 - **Time calculator** — estimate how long it takes to reach a currency goal, using either a preset event rate or your own measured rate (either typed in, or derived from a past play session).
 - **Drop probability** — work out how many boxes you need on average to obtain a given drop at a given % chance, and optionally what that would cost.
-- **Truecolor TUI** — animated gradients, per-tool colour themes (red / orange / yellow / green), arrow-key menus, pulsing highlights.
-- **Runs anywhere** — one `g++` command, no dependencies beyond a C++17 compiler.
+
 
 ---
 
