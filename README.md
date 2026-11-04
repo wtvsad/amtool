@@ -295,4 +295,4 @@ SOFTWARE.
 
 ---
 
-**Made by [@wtvsad](https://github.com/wtvsad)** — CSE undergrad · Cybersecurity Club member
+**Made by [@wtvsad](https://github.com/wtvsad)**
