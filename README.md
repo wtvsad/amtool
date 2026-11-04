@@ -392,25 +392,3 @@ git stash pop
 
 If you meant to throw your edits away: `git checkout -- amtool.cpp` then `git pull`.
 
----
-
-## License
-
-MIT — see [`LICENSE`](./LICENSE).
-
----
-
-## Links
-
-- **YouTube:** [youtube.com/@wtvsad](https://www.youtube.com/@wtvsad)
-- **X / Twitter:** [x.com/wtvsad](https://x.com/wtvsad)
-- **ArtStation:** [artstation.com/wtvsad](https://www.artstation.com/wtvsad)
-- **GitHub:** [github.com/wtvsad](https://github.com/wtvsad)
-- **Patreon:** [patreon.com/wtvsad](https://patreon.com/wtvsad)
-
-> *"Maybe SAD stands for SomeAmazingDude, who knows."*
-> *(actually, first 3 letters of my legal last name)*
-
----
-
-**Made by [@wtvsad](https://github.com/wtvsad)**
