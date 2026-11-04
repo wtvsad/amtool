@@ -1,16 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════
-//  A M T O O L  ·  ultra TUI edition  ·  v2.14
-//  Adopt Me! calculator suite — concept @wtvsad
-//
-//  v2.14:
-//   • Single geometry source: INDENT = 3, BAR_W = 58 → every rule
-//     (menu seps, panel borders, fade bars, spinners) is 61 cols total
-//   • Fade frames use \033[K so no leftover bars after transition
-//   • clearScreen() adds \033[3J to clear scrollback
-//   • Boot spinners + progress bars restored
-//   • All panel chrome now starts at INDENT (was hardcoded 2)
-// ═══════════════════════════════════════════════════════════════════════
-
 #include <iostream>
 #include <string>
 #include <sstream>
