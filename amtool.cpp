@@ -21,21 +21,15 @@
   #include <termios.h>
   #include <unistd.h>
   #include <sys/select.h>
+  #include <sys/ioctl.h>
 #endif
 
 using namespace std;
 using namespace std::chrono;
 
-// ═══════════════════════════════════════════════════════════════════════
-//  GEOMETRY — single source of truth
-// ═══════════════════════════════════════════════════════════════════════
-const int INDENT = 3;   // leading spaces on every visual element
-const int BAR_W  = 58;  // width of every horizontal rule / fade bar
-                        // total visible per row = INDENT + BAR_W = 61
+const int INDENT = 2;
+const int BAR_W  = 56;
 
-// ═══════════════════════════════════════════════════════════════════════
-//  ⚙  PRESET EVENT RATE
-// ═══════════════════════════════════════════════════════════════════════
 struct PresetRate {
     string eventName;
     string currencyName;
@@ -52,9 +46,6 @@ const PresetRate PRESET_RATE = {
 
 struct UserCancelled {};
 
-// ═══════════════════════════════════════════════════════════════════════
-//  ANSI + truecolor
-// ═══════════════════════════════════════════════════════════════════════
 namespace A {
     const string RESET = "\033[0m", BOLD = "\033[1m", DIM = "\033[2m";
 }
@@ -84,9 +75,6 @@ const RGB DARK_C   {  40,  44,  60 };
 const RGB BLACK_C  {  15,  16,  24 };
 const RGB RED_C    { 255,  80, 100 };
 
-// ═══════════════════════════════════════════════════════════════════════
-//  THEMES
-// ═══════════════════════════════════════════════════════════════════════
 struct Theme {
     RGB pulse1, pulse2;
     RGB accent;
@@ -129,11 +117,9 @@ const Theme THEME_GREEN = {
     { 50, 255, 120}, {150, 255, 180}
 };
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Text helpers
-// ═══════════════════════════════════════════════════════════════════════
 inline string repeatStr(const string& s, int n) {
-    string r; r.reserve(s.size() * (size_t)(n > 0 ? n : 0));
+    string r;
+    if (n > 0) r.reserve(s.size() * (size_t)n);
     for (int i = 0; i < n; ++i) r += s;
     return r;
 }
@@ -205,18 +191,12 @@ string padRight(const string& s, int w) {
     return s + string((size_t)(w - len), ' ');
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Cursor / screen — clears scrollback too
-// ═══════════════════════════════════════════════════════════════════════
 void clearScreen() { cout << "\033[2J\033[3J\033[H" << flush; }
 void homeCursor()  { cout << "\033[H"    << flush; }
 void hideCursor()  { cout << "\033[?25l" << flush; }
 void showCursor()  { cout << "\033[?25h" << flush; }
 void clearLine()   { cout << "\033[2K\r" << flush; }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Animation
-// ═══════════════════════════════════════════════════════════════════════
 void typewrite(const string& s, int delayMs = 16) {
     for (auto& ch : splitChars(s)) {
         cout << ch << flush;
@@ -259,7 +239,6 @@ void progressTask(const string& label, int ms, int width = 38) {
     cout << "\n";
 }
 
-// Every fade bar: INDENT spaces + up to BAR_W glyphs, \033[K clears trailing.
 void introWipe() {
     for (int i = 0; i <= BAR_W; i += 8) {
         int w = min(i, BAR_W);
@@ -271,9 +250,6 @@ void introWipe() {
     cout << "\n" << flush;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Raw mode
-// ═══════════════════════════════════════════════════════════════════════
 struct RawMode {
     bool on = false;
 #ifndef _WIN32
@@ -421,9 +397,6 @@ void pauseAny() {
     cout << "\n";
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  URL opener
-// ═══════════════════════════════════════════════════════════════════════
 bool openUrl(const string& url) {
 #ifdef _WIN32
     string cmd = "start \"\" \"" + url + "\" >nul 2>&1";
@@ -436,9 +409,6 @@ bool openUrl(const string& url) {
     return rc == 0;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Numbers & clock
-// ═══════════════════════════════════════════════════════════════════════
 string fmtNum(double v) {
     bool neg = v < 0; double a = fabs(v);
     double r = floor(a * 100.0 + 0.5) / 100.0;
@@ -460,9 +430,6 @@ string currentClock() {
     return buf;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Logo
-// ═══════════════════════════════════════════════════════════════════════
 const vector<string> LOGO = {
     "░█████╗░███╗░░░███╗████████╗░█████╗░░█████╗░██╗░░░░░",
     "██╔══██╗████╗░████║╚══██╔══╝██╔══██╗██╔══██╗██║░░░░░",
@@ -486,11 +453,7 @@ void revealLogo() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Panel chrome — INDENT + ╭ + PANEL_W + ╮ = INDENT + 2 + PANEL_W
-//  To match BAR_W: PANEL_W must = BAR_W - 2 = 56.
-// ═══════════════════════════════════════════════════════════════════════
-const int PANEL_W = BAR_W - 2;   // 56
+const int PANEL_W = BAR_W - 2;
 
 void panelTop(const string& title, RGB accent) {
     if (title.empty()) {
@@ -521,18 +484,17 @@ void panelSep(RGB accent) {
     cout << string(INDENT, ' ') << fg(accent)
          << "├" << repeatStr("─", PANEL_W) << "┤" << RESET << "\n";
 }
+
 void panelSepThick(RGB accent) {
     cout << string(INDENT, ' ') << fg(accent)
          << "╞" << repeatStr("═", PANEL_W) << "╡" << RESET << "\n";
 }
+
 void panelBottom(RGB accent) {
     cout << string(INDENT, ' ') << fg(accent)
          << "╰" << repeatStr("─", PANEL_W) << "╯" << RESET << "\n";
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  FormPanel
-// ═══════════════════════════════════════════════════════════════════════
 struct FormPanel {
     string title;
     string subtitle;
@@ -545,7 +507,7 @@ struct FormPanel {
     void draw() {
         RGB ac = theme.accent;
         homeCursor();
-        cout << "\033[2K\n\n\n\n";   // 4 blank lines of breathing room
+        cout << "\033[2K\n\n\n\n";
 
         cout << "\033[2K"; panelTop(title, ac);
         cout << "\033[2K"; panelLine("", ac);
@@ -705,13 +667,9 @@ struct FormPanel {
     }
 };
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Screen transition — consistent bar width, erased frames, breathing room
-// ═══════════════════════════════════════════════════════════════════════
 void screenSwipe(const string& next, const Theme& theme) {
     clearScreen();
 
-    // fade in
     for (int i = 0; i <= BAR_W; i += 8) {
         int w = min(i, BAR_W);
         cout << "\r" << string(INDENT, ' ')
@@ -721,7 +679,6 @@ void screenSwipe(const string& next, const Theme& theme) {
     }
     cout << "\n\n\n";
 
-    // spinner + loading text
     static const char* frames[] = {"⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"};
     auto t0 = steady_clock::now();
     int fi = 0;
@@ -737,7 +694,6 @@ void screenSwipe(const string& next, const Theme& theme) {
     this_thread::sleep_for(milliseconds(60));
     cout << "\n\n\n";
 
-    // fade out
     for (int i = BAR_W; i >= 0; i -= 8) {
         int w = max(0, i);
         cout << "\r" << string(INDENT, ' ')
@@ -750,9 +706,6 @@ void screenSwipe(const string& next, const Theme& theme) {
     clearScreen();
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Generic select menu
-// ═══════════════════════════════════════════════════════════════════════
 struct MenuEntry { string key, title, sub; char shortcut; };
 
 int runSelectMenu(const string& title, const vector<MenuEntry>& items,
@@ -772,9 +725,8 @@ int runSelectMenu(const string& title, const vector<MenuEntry>& items,
         RGB hl = lerp(theme.pulse1, theme.pulse2, phase);
 
         homeCursor();
-        cout << "\033[2K\n\n\n\n";   // 4 blank lines of breathing room
+        cout << "\033[2K\n\n\n\n";
 
-        // header
         cout << "\033[2K" << string(INDENT, ' ')
              << gradientLine(title, theme.title1, theme.title2, true);
         if (!label.empty()) cout << "  " << fg(GRAY_C) << DIM << label << RESET;
@@ -783,7 +735,6 @@ int runSelectMenu(const string& title, const vector<MenuEntry>& items,
              << fg(theme.accent) << repeatStr("─", BAR_W) << RESET << "\n";
         cout << "\033[2K\n";
 
-        // items
         for (int i = 0; i < (int)items.size(); ++i) {
             const auto& e = items[i];
             bool active = (i == sel);
@@ -813,7 +764,6 @@ int runSelectMenu(const string& title, const vector<MenuEntry>& items,
             cout << "\033[2K\n";
         }
 
-        // footer
         cout << "\033[2K" << string(INDENT, ' ')
              << fg(theme.accent) << repeatStr("─", BAR_W) << RESET << "\n";
         cout << "\033[2K" << string(INDENT, ' ')
@@ -842,9 +792,6 @@ int runSelectMenu(const string& title, const vector<MenuEntry>& items,
     return result;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Boot — logo, tagline, wipe, spinners, module progress, ready
-// ═══════════════════════════════════════════════════════════════════════
 void bootSequence() {
     clearScreen();
     hideCursor();
@@ -871,9 +818,6 @@ void bootSequence() {
     this_thread::sleep_for(milliseconds(400));
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  pet accumulator
-// ═══════════════════════════════════════════════════════════════════════
 struct PetLine {
     string name;
     double unit;
@@ -882,9 +826,6 @@ struct PetLine {
     double totalCost() const { return unit * (double)totalPets(); }
 };
 
-// ═══════════════════════════════════════════════════════════════════════
-//  NMCOST · flexible
-// ═══════════════════════════════════════════════════════════════════════
 void toolFlexibleCost() {
     screenSwipe("NMCOST · flexible", THEME_RED);
     FormPanel fp("COST CALCULATOR · FLEXIBLE", THEME_RED,
@@ -920,9 +861,6 @@ void toolFlexibleCost() {
     pauseAny();
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  NMCOST · NEON / MEGA
-// ═══════════════════════════════════════════════════════════════════════
 void toolNeonMega() {
     screenSwipe("NMCOST · NEON/MEGA", THEME_RED);
     FormPanel fp("COST CALCULATOR · NEON / MEGA", THEME_RED,
@@ -1010,9 +948,6 @@ void toolNeonMega() {
     pauseAny();
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  NMCOST · sub-menu
-// ═══════════════════════════════════════════════════════════════════════
 void toolNmcostMenu() {
     vector<MenuEntry> items = {
         { "a", "flexible cost",  "any amount of pets",  'a' },
@@ -1029,9 +964,6 @@ void toolNmcostMenu() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  TIMECALC · shared result renderer
-// ═══════════════════════════════════════════════════════════════════════
 void timecalcFinish(FormPanel& fp, double perHour, const string& cur) {
     if (perHour <= 0) {
         fp.sep();
@@ -1071,9 +1003,6 @@ void timecalcFinish(FormPanel& fp, double perHour, const string& cur) {
     pauseAny();
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  TIMECALC · quick
-// ═══════════════════════════════════════════════════════════════════════
 void toolTimecalcQuick() {
     screenSwipe("TIMECALC · QUICK", THEME_ORANGE);
     FormPanel fp("QUICK TIME CALCULATOR", THEME_ORANGE,
@@ -1099,9 +1028,6 @@ void toolTimecalcQuick() {
     timecalcFinish(fp, PRESET_RATE.amountPerHour, cur);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  TIMECALC · custom · enter rate
-// ═══════════════════════════════════════════════════════════════════════
 void toolTimecalcCustomRate() {
     screenSwipe("TIMECALC · CUSTOM · RATE", THEME_ORANGE);
     FormPanel fp("TIME CALCULATOR · CUSTOM", THEME_ORANGE,
@@ -1126,9 +1052,6 @@ void toolTimecalcCustomRate() {
     timecalcFinish(fp, perHour, cur);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  TIMECALC · custom · derive rate from session
-// ═══════════════════════════════════════════════════════════════════════
 void toolTimecalcCustomEarnings() {
     screenSwipe("TIMECALC · CUSTOM · EARNINGS", THEME_ORANGE);
     FormPanel fp("TIME CALCULATOR · CUSTOM", THEME_ORANGE,
@@ -1161,9 +1084,6 @@ void toolTimecalcCustomEarnings() {
     timecalcFinish(fp, perHour, cur);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  TIMECALC · custom sub-menu
-// ═══════════════════════════════════════════════════════════════════════
 void toolTimecalcCustom() {
     vector<MenuEntry> items = {
         { "a", "I know my rate",     "type it in",               'a' },
@@ -1180,9 +1100,6 @@ void toolTimecalcCustom() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  TIMECALC · main sub-menu
-// ═══════════════════════════════════════════════════════════════════════
 void toolTimecalc() {
     vector<MenuEntry> items = {
         { "a", "quick",   "use preset event rate",   'a' },
@@ -1199,9 +1116,6 @@ void toolTimecalc() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  PROBCALC
-// ═══════════════════════════════════════════════════════════════════════
 void toolProbcalc() {
     screenSwipe("PROBCALC", THEME_YELLOW);
     FormPanel fp("DROP PROBABILITY", THEME_YELLOW,
@@ -1235,9 +1149,6 @@ void toolProbcalc() {
     pauseAny();
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  ABOUT
-// ═══════════════════════════════════════════════════════════════════════
 struct SocialLink { string url; string display; };
 
 void toolAbout() {
@@ -1252,8 +1163,7 @@ void toolAbout() {
         { "https://x.com/wtvsad", "x.com/wtvsad" },
         { "https://www.artstation.com/wtvsad", "artstation.com/wtvsad" },
         { "https://github.com/wtvsad", "github.com/wtvsad" },
-        { "https://patreon.com/wtvsad?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink",
-          "patreon.com/wtvsad" },
+        { "https://patreon.com/wtvsad", "patreon.com/wtvsad" },
     };
 
     RGB HACK_DIM   {  0, 150,  60 };
@@ -1263,7 +1173,7 @@ void toolAbout() {
     RGB HACK_BG    {  0,  20,  10 };
     RGB HACK_ERR   {255,  80, 100 };
 
-    const int INNER = 74;
+    const int INNER = 70;
 
     int sel = 0;
     auto pulseBase   = steady_clock::now();
@@ -1326,15 +1236,14 @@ void toolAbout() {
         homeCursor();
         cout << "\033[2K\n\n\n\n";
 
-        borderTop("wtvsad@amtool · v2.14");
+        borderTop("wtvsad@amtool · v2.15");
 
         blank();
         row("  " + fg(HACK_BRIGHT) + BOLD + "$ " + RESET + fg(HACK_MED) + "cat README.md" + RESET);
         blank();
-        row("  " + fg(HACK_WHITE) + "AMTOOL is a terminal calculator for the Adopt Me!" + RESET);
-        row("  " + fg(HACK_WHITE) + "trading community. Cost out pet stacks, estimate" + RESET);
-        row("  " + fg(HACK_WHITE) + "grind time, and work out box-drop probability —" + RESET);
-        row("  " + fg(HACK_WHITE) + "all without leaving your terminal." + RESET);
+        row("  " + fg(HACK_WHITE) + "A terminal calculator for the Adopt Me!" + RESET);
+        row("  " + fg(HACK_WHITE) + "trading community — cost out pets, estimate" + RESET);
+        row("  " + fg(HACK_WHITE) + "grind time, and work out drop odds." + RESET);
 
         section("whoami");
         blank();
@@ -1344,17 +1253,10 @@ void toolAbout() {
             + fg(HACK_DIM) + "· creator of amtool" + RESET);
         row("  " + fg(HACK_WHITE) + "Uploading things I make." + RESET);
         blank();
-        row("  " + fg(HACK_MED) + "CSE undergrad  ·  Cybersecurity Club member" + RESET);
-        blank();
-        row("  " + fg(HACK_MED) + "Topics I work in:" + RESET);
-        row("  " + fg(HACK_DIM) + "  · Digital Art              · 3D Modelling" + RESET);
-        row("  " + fg(HACK_DIM) + "  · Particle Simulation      · 2D Animation (vector)" + RESET);
-        row("  " + fg(HACK_DIM) + "  · 3D Animation             · Game Development" + RESET);
-        row("  " + fg(HACK_DIM) + "  · Video Edit               · Sound Design" + RESET);
-        row("  " + fg(HACK_DIM) + "  · Programming" + RESET);
+        row("  " + fg(HACK_DIM) + "digital art · 3D · animation · gamedev · code" + RESET);
         blank();
         row("  " + fg(HACK_MED) + "\"Maybe SAD stands for SomeAmazingDude, who knows.\"" + RESET);
-        row("  " + fg(HACK_DIM) + DIM + "(actually, first 3 letters of my legal last name)" + RESET);
+        row("  " + fg(HACK_DIM) + DIM + "(actually, first 3 letters of my last name)" + RESET);
 
         section("socials");
         blank();
@@ -1410,23 +1312,17 @@ void toolAbout() {
     if (!wasOn) g_raw.disable();
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Main menu
-// ═══════════════════════════════════════════════════════════════════════
 int runMainMenu() {
     vector<MenuEntry> items = {
         { "a", "Cost calculator",  "work out how much currency you need",    'a' },
         { "b", "Time calculator",  "how long until you reach your goal",     'b' },
         { "c", "Drop probability", "boxes required for a drop at % chance",  'c' },
-        { "i", "About / credits",  "who made this thing",                    'i' },
+        { "i", "About dev",        "who made this thing",                    'i' },
     };
     return runSelectMenu("A M T O O L", items, THEME_BRAND,
                          "calculator suite", "esc quit");
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  main
-// ═══════════════════════════════════════════════════════════════════════
 int main() {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
@@ -1439,6 +1335,25 @@ int main() {
     signal(SIGINT, signalHandler);
 #endif
     ios_base::sync_with_stdio(false);
+
+    {
+        int cols = 0;
+#ifdef _WIN32
+        CONSOLE_SCREEN_BUFFER_INFO info;
+        if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info))
+            cols = info.srWindow.Right - info.srWindow.Left + 1;
+#else
+        struct winsize w;
+        if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == 0) cols = w.ws_col;
+#endif
+        if (cols > 0 && cols < 76) {
+            cout << "\n  " << fg(RED_C) << "✖ terminal too narrow" << RESET
+                 << " — this tool needs at least 76 columns, yours is "
+                 << BOLD << cols << RESET << ".\n"
+                 << "  Please widen your terminal and try again.\n\n";
+            return 1;
+        }
+    }
 
     bootSequence();
 
